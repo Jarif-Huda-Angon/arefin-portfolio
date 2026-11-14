@@ -1,45 +1,58 @@
-import React, { useState, useEffect } from 'react';
-import { Play, Download, Mail, Video, Monitor, Star, Menu, X, Scissors, Sun, Moon, MapPin, Send, Smartphone, Gamepad2, Camera, Quote, Award, BookOpen } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Play, Mail, Video, Monitor, Star, Menu, X, Scissors, Sun, Moon, MapPin, Send, Smartphone, Gamepad2, Camera, Quote, Award, BookOpen, Zap } from 'lucide-react';
 
 // Asset Imports from src/assets/
-import showreelVideo from './assets/showreel-bg.mp4';
+import heroImg from './assets/hero.jpeg';
 import client1Img from './assets/client1.jpeg';
 import client2Img from './assets/client2.jpeg';
 import client3Img from './assets/client3.jpeg';
+import client4Img from './assets/client4.jpeg';
 
 export default function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [pointer, setPointer] = useState({ nx: 0, ny: 0, px: 50, py: 50, active: false });
+  const heroRef = useRef(null);
 
   useEffect(() => {
     document.body.className = isDarkMode ? 'bg-[#05050a] text-white' : 'bg-slate-50 text-slate-900';
-
-    const handleMouseMove = (e) => {
-      setMousePos({
-        x: (e.clientX / window.innerWidth - 0.5) * 30,
-        y: (e.clientY / window.innerHeight - 0.5) * 30
-      });
-    };
-
-    const handleTouchMove = (e) => {
-      if (e.touches && e.touches[0]) {
-        setMousePos({
-          x: (e.touches[0].clientX / window.innerWidth - 0.5) * 30,
-          y: (e.touches[0].clientY / window.innerHeight - 0.5) * 30
-        });
-      }
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('touchmove', handleTouchMove);
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('touchmove', handleTouchMove);
-    };
   }, [isDarkMode]);
 
   const toggleTheme = () => setIsDarkMode(!isDarkMode);
+
+  // Unified Desktop Mouse & Mobile Touch Tracker
+  const updatePointerCoords = (clientX, clientY) => {
+    if (!heroRef.current) return;
+    const rect = heroRef.current.getBoundingClientRect();
+    const relX = clientX - rect.left;
+    const relY = clientY - rect.top;
+    const px = Math.max(0, Math.min(100, (relX / rect.width) * 100));
+    const py = Math.max(0, Math.min(100, (relY / rect.height) * 100));
+    const nx = (px / 100 - 0.5) * 2; // -1 to 1
+    const ny = (py / 100 - 0.5) * 2; // -1 to 1
+    setPointer({ nx, ny, px, py, active: true });
+  };
+
+  const handleMouseMove = (e) => updatePointerCoords(e.clientX, e.clientY);
+  const handleMouseLeave = () => setPointer((prev) => ({ ...prev, nx: 0, ny: 0, active: false }));
+
+  const handleTouchStart = (e) => {
+    if (e.touches && e.touches[0]) {
+      updatePointerCoords(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (e.touches && e.touches[0]) {
+      updatePointerCoords(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setTimeout(() => {
+      setPointer((prev) => ({ ...prev, nx: 0, ny: 0, active: false }));
+    }, 400);
+  };
 
   const customStyles = `
     @keyframes glitch {
@@ -50,14 +63,28 @@ export default function App() {
       80% { transform: translate(2px, -2px) }
       100% { transform: translate(0) }
     }
-    .hover-glitch:hover {
+    @keyframes floatSlow {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+    }
+    @keyframes neonPulse {
+      0%, 100% { box-shadow: 0 0 25px rgba(34, 211, 238, 0.35), 0 0 55px rgba(168, 85, 247, 0.25); }
+      50% { box-shadow: 0 0 40px rgba(168, 85, 247, 0.55), 0 0 80px rgba(236, 72, 153, 0.35); }
+    }
+    .hover-glitch:hover, .hover-glitch:active {
       animation: glitch 0.3s cubic-bezier(.25, .46, .45, .94) both infinite;
       text-shadow: 2px 0 #ff00ff, -2px 0 #00ffff;
     }
+    .animate-float {
+      animation: floatSlow 5s ease-in-out infinite;
+    }
+    .neon-frame {
+      animation: neonPulse 4s ease-in-out infinite;
+    }
     .gta-grid {
       background-size: 50px 50px;
-      background-image: linear-gradient(to right, rgba(168, 85, 247, 0.05) 1px, transparent 1px),
-                        linear-gradient(to bottom, rgba(34, 211, 238, 0.05) 1px, transparent 1px);
+      background-image: linear-gradient(to right, rgba(168, 85, 247, 0.06) 1px, transparent 1px),
+                        linear-gradient(to bottom, rgba(34, 211, 238, 0.06) 1px, transparent 1px);
       mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
     }
     .scanlines {
@@ -72,7 +99,7 @@ export default function App() {
       glass: 'bg-[#0a0a16]/80 border-white/10 shadow-[0_8px_32px_rgba(168,85,247,0.15)] backdrop-blur-xl',
       nav: 'bg-[#05050a]/90 border-white/5',
       textMuted: 'text-slate-400',
-      card: 'bg-white/5 border-white/10 hover:bg-white/10 hover:-translate-y-2 transition-all duration-500',
+      card: 'bg-white/5 border-white/10 hover:bg-white/10 hover:-translate-y-2 active:scale-[0.99] transition-all duration-500',
       input: 'bg-[#11111a] border-white/10 text-white focus:border-cyan-500'
     }
     : {
@@ -80,7 +107,7 @@ export default function App() {
       glass: 'bg-white/90 border-slate-200 shadow-xl shadow-purple-500/10 backdrop-blur-xl',
       nav: 'bg-white/90 border-slate-200',
       textMuted: 'text-slate-600',
-      card: 'bg-white border-slate-200 hover:-translate-y-2 hover:border-purple-400 transition-all duration-500',
+      card: 'bg-white border-slate-200 hover:-translate-y-2 hover:border-purple-400 active:scale-[0.99] transition-all duration-500',
       input: 'bg-slate-50 border-slate-200 text-slate-900 focus:border-cyan-500'
     };
 
@@ -94,12 +121,12 @@ export default function App() {
           <div className="fixed inset-0 gta-grid pointer-events-none z-0"></div>
           <div className="fixed inset-0 scanlines pointer-events-none z-50 opacity-20"></div>
           <div
-            className="fixed top-1/4 left-1/4 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[150px] -z-10 transition-transform duration-1000 ease-out"
-            style={{ transform: `translate(${mousePos.x * 2}px, ${mousePos.y * 2}px)` }}
+            className="fixed top-1/4 left-1/4 w-[500px] h-[500px] bg-purple-600/15 rounded-full blur-[150px] -z-10 transition-transform duration-700 ease-out"
+            style={{ transform: `translate(${pointer.nx * 35}px, ${pointer.ny * 35}px)` }}
           ></div>
           <div
-            className="fixed bottom-1/4 right-1/4 w-[500px] h-[500px] bg-cyan-600/10 rounded-full blur-[150px] -z-10 transition-transform duration-1000 ease-out"
-            style={{ transform: `translate(${-mousePos.x * 2}px, ${-mousePos.y * 2}px)` }}
+            className="fixed bottom-1/4 right-1/4 w-[500px] h-[500px] bg-cyan-600/15 rounded-full blur-[150px] -z-10 transition-transform duration-700 ease-out"
+            style={{ transform: `translate(${-pointer.nx * 35}px, ${-pointer.ny * 35}px)` }}
           ></div>
         </>
       )}
@@ -148,18 +175,43 @@ export default function App() {
         )}
       </nav>
 
-      {/* Hero Section */}
-      <section className="pt-32 pb-20 px-6 min-h-screen flex items-center relative z-10">
-        <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
+      {/* Hero Section with Desktop Mouse & Mobile Touch Neon Light Tracking */}
+      <section
+        ref={heroRef}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+        className="pt-32 pb-20 px-6 min-h-screen flex items-center relative z-10 overflow-hidden"
+      >
+        {/* Interactive Neon Spotlight (Follows Mouse on PC & Finger on Smartphone) */}
+        <div
+          className="pointer-events-none absolute inset-0 transition-opacity duration-300 z-0"
+          style={{
+            opacity: pointer.active ? 1 : 0.45,
+            background: `radial-gradient(450px circle at ${pointer.px}% ${pointer.py}%, rgba(34, 211, 238, 0.22), rgba(168, 85, 247, 0.14) 45%, transparent 75%)`
+          }}
+        />
+
+        {/* Touch Pulse Ring on Mobile */}
+        {pointer.active && (
+          <div
+            className="pointer-events-none absolute w-24 h-24 -ml-12 -mt-12 rounded-full border-2 border-cyan-400/60 shadow-[0_0_25px_rgba(34,211,238,0.8)] animate-ping z-30 md:hidden"
+            style={{ left: `${pointer.px}%`, top: `${pointer.py}%` }}
+          />
+        )}
+
+        <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center relative z-10 w-full">
           <div className="relative">
-            <div className={`inline-flex items-center gap-2 px-4 py-1 rounded-sm skew-x-[-10deg] border mb-8 backdrop-blur-sm animate-pulse ${isDarkMode ? 'border-cyan-500/50 bg-cyan-500/10' : 'border-cyan-200 bg-cyan-50'}`}>
-              <div className="w-2 h-2 rounded-full bg-cyan-400 skew-x-[10deg]"></div>
+            <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-sm skew-x-[-10deg] border mb-8 backdrop-blur-sm shadow-[0_0_15px_rgba(34,211,238,0.25)] ${isDarkMode ? 'border-cyan-500/60 bg-cyan-500/10' : 'border-cyan-300 bg-cyan-50'}`}>
+              <div className="w-2 h-2 rounded-full bg-cyan-400 animate-ping skew-x-[10deg]"></div>
               <span className={`text-xs font-black uppercase tracking-widest skew-x-[10deg] ${isDarkMode ? 'text-cyan-400' : 'text-cyan-700'}`}>Status: Available for Freelance</span>
             </div>
 
             <h1 className="text-5xl sm:text-6xl md:text-8xl font-black leading-[0.9] mb-6 tracking-tighter uppercase italic">
               Arefin<br />Shafi<br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 hover-glitch inline-block">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 hover-glitch inline-block drop-shadow-[0_0_25px_rgba(168,85,247,0.4)]">
                 Video Editor
               </span>
             </h1>
@@ -169,53 +221,72 @@ export default function App() {
             </p>
 
             <div className="flex flex-wrap gap-4">
-              <a href="#contact" className="flex items-center gap-2 px-8 py-4 rounded-sm skew-x-[-10deg] bg-gradient-to-r from-purple-600 to-cyan-600 text-white font-black uppercase tracking-wider hover:shadow-[0_0_30px_rgba(168,85,247,0.6)] hover:-translate-y-1 transition-all duration-300">
+              <a href="#contact" className="flex items-center gap-2 px-8 py-4 rounded-sm skew-x-[-10deg] bg-gradient-to-r from-purple-600 via-pink-600 to-cyan-500 text-white font-black uppercase tracking-wider shadow-[0_0_25px_rgba(168,85,247,0.5)] hover:shadow-[0_0_40px_rgba(34,211,238,0.8)] hover:-translate-y-1 active:scale-95 transition-all duration-300">
                 <span className="flex items-center gap-2 skew-x-[10deg]">
-                  <Play size={18} className="fill-white" />
+                  <Zap size={18} className="fill-white" />
                   Let's Work Together
                 </span>
+              </a>
+              <a href="#testimonials" className={`flex items-center gap-2 px-8 py-4 rounded-sm skew-x-[-10deg] border font-black uppercase tracking-wider backdrop-blur-md transition-all duration-300 hover:border-cyan-400 active:scale-95 ${isDarkMode ? 'border-white/20 bg-white/5 text-white hover:bg-white/10' : 'border-slate-300 bg-white/80 text-slate-900'}`}>
+                <span className="skew-x-[10deg]">Client Reviews</span>
               </a>
             </div>
           </div>
 
-          {/* Hero Video Display (Desktop & Mobile Responsive) */}
-          <div className="relative perspective-1000 mt-8 lg:mt-0" style={{ transform: `translate(${mousePos.x * 0.5}px, ${mousePos.y * 0.5}px)` }}>
-            <div className={`relative w-full max-w-[420px] mx-auto lg:ml-auto rounded-2xl overflow-hidden border-2 z-20 shadow-2xl ${theme.glass} ${isDarkMode ? 'border-white/10' : 'border-white'}`}>
-              <div className="flex items-center justify-between px-4 py-3 border-b border-white/5 bg-black/40">
+          {/* Hero Picture Display with 3D Tilt, Floating Motion & Neon Lights */}
+          <div className="relative mt-6 lg:mt-0 animate-float">
+            {/* Ambient Neon Glow Behind Picture */}
+            <div className="absolute -inset-3 bg-gradient-to-r from-cyan-500 via-purple-600 to-pink-500 rounded-3xl blur-2xl opacity-45 animate-pulse pointer-events-none"></div>
+
+            <div
+              className={`relative w-full max-w-[420px] mx-auto lg:ml-auto rounded-2xl overflow-hidden border-2 border-cyan-400/50 z-20 neon-frame transition-transform duration-200 ease-out ${theme.glass}`}
+              style={{
+                transform: `perspective(1000px) rotateY(${pointer.nx * 10}deg) rotateX(${-pointer.ny * 10}deg)`
+              }}
+            >
+              <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-black/60">
                 <div className="flex gap-2">
-                  <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                  <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                  <div className="w-3 h-3 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444]"></div>
+                  <div className="w-3 h-3 rounded-full bg-yellow-500 shadow-[0_0_8px_#eab308]"></div>
+                  <div className="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_8px_#22c55e]"></div>
                 </div>
-                <span className={`text-xs font-mono ${theme.textMuted}`}>showreel_loop.mp4</span>
+                <span className="text-xs font-mono text-cyan-400 font-bold tracking-wider">AREFIN_PRO_4K.RAW</span>
               </div>
-              <div className="overflow-hidden relative h-[380px] sm:h-[450px] bg-slate-900">
-                <video
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  className="w-full h-full object-cover contrast-125"
-                >
-                  <source src={showreelVideo} type="video/mp4" />
-                </video>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none"></div>
+              <div className="overflow-hidden relative h-[380px] sm:h-[450px] bg-slate-900 group">
+                <img
+                  src={heroImg}
+                  alt="Arefin Shafi"
+                  className="w-full h-full object-cover contrast-110 group-hover:scale-105 transition-transform duration-700"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#05050a] via-transparent to-cyan-500/10 pointer-events-none"></div>
+
+                {/* Bottom Neon Caption inside Hero Card */}
+                <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between px-4 py-2.5 rounded-xl bg-black/70 backdrop-blur-md border border-cyan-400/30">
+                  <span className="text-xs font-black uppercase tracking-widest text-white">Arefin Shafi</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-cyan-400 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                    Editor Mode
+                  </span>
+                </div>
               </div>
             </div>
 
-            {/* Floating Timeline UI */}
-            <div className={`hidden sm:block absolute top-[380px] -left-6 w-[420px] rounded-xl border-l-4 border-l-cyan-400 p-4 z-30 animate-[bounce_6s_infinite] backdrop-blur-2xl ${isDarkMode ? 'bg-[#0a0a16]/90 border-white/10' : 'bg-white/90 border-slate-200'}`}>
+            {/* Floating Timeline HUD */}
+            <div
+              className={`hidden sm:block absolute -bottom-6 -left-6 w-[380px] rounded-xl border-l-4 border-l-cyan-400 p-4 z-30 shadow-[0_0_30px_rgba(34,211,238,0.25)] backdrop-blur-2xl transition-transform duration-300 ${isDarkMode ? 'bg-[#0a0a16]/95 border-white/10' : 'bg-white/95 border-slate-200'}`}
+              style={{ transform: `translate(${-pointer.nx * 14}px, ${-pointer.ny * 14}px)` }}
+            >
               <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-black text-cyan-400 tracking-widest uppercase">Render Sequence</span>
-                <Video size={16} className="text-cyan-400 animate-pulse" />
+                <Video size={16} className="text-pink-500 animate-pulse" />
               </div>
               <div className="space-y-2">
                 <div className="flex items-center gap-3">
                   <span className={`text-[10px] font-bold w-12 ${theme.textMuted}`}>V1 MAIN</span>
-                  <div className="flex-1 h-6 rounded-sm flex gap-1 p-1 bg-black/50">
-                    <div className="w-1/3 h-full bg-cyan-500 rounded-sm"></div>
-                    <div className="w-1/3 h-full bg-purple-500 rounded-sm"></div>
-                    <div className="w-1/3 h-full bg-pink-500 rounded-sm"></div>
+                  <div className="flex-1 h-5 rounded-sm flex gap-1 p-1 bg-black/50">
+                    <div className="w-1/3 h-full bg-cyan-400 rounded-sm shadow-[0_0_10px_#22d3ee]"></div>
+                    <div className="w-1/3 h-full bg-purple-500 rounded-sm shadow-[0_0_10px_#a855f7]"></div>
+                    <div className="w-1/3 h-full bg-pink-500 rounded-sm shadow-[0_0_10px_#ec4899]"></div>
                   </div>
                 </div>
               </div>
@@ -224,7 +295,7 @@ export default function App() {
         </div>
       </section>
 
-      {/* 5-Star Testimonials Section */}
+      {/* 5-Star Testimonials Section (4 Client Reviews) */}
       <section id="testimonials" className="py-24 px-6 relative z-10">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col items-center mb-16 text-center">
@@ -232,19 +303,21 @@ export default function App() {
             <h3 className="text-4xl sm:text-5xl font-black uppercase italic tracking-tighter">Verified Reviews</h3>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-2 gap-8">
 
             {/* Testimonial 1: Mohammed Hammad */}
-            <div className={`p-8 rounded-2xl border relative flex flex-col justify-between ${theme.glass}`}>
+            <div className={`p-8 rounded-2xl border relative flex flex-col justify-between ${theme.glass} hover:border-cyan-400/50 transition-all duration-300`}>
               <Quote className="absolute top-6 right-6 text-purple-500/20" size={50} />
               <div>
                 <div className="flex gap-1 mb-6">
-                  {[1, 2, 3, 4, 5].map(star => (
-                    <Star key={star} className="fill-yellow-500 text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]" size={18} />
-                  ))}
+                  <Star className="fill-yellow-500 text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]" size={18} />
+                  <Star className="fill-yellow-500 text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]" size={18} />
+                  <Star className="fill-yellow-500 text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]" size={18} />
+                  <Star className="fill-yellow-500 text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]" size={18} />
+                  <Star className="fill-yellow-500 text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]" size={18} />
                 </div>
                 <p className={`text-sm italic font-medium mb-8 leading-relaxed ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>
-                  "I've really enjoyed working with Arefin. He's not only a talented video editor but also someone who understands what makes short-form content work. He's consistent, responsive, and always willing to improve based on feedback. His editing has helped us maintain a strong flow of content across our TikTok channels."
+                  "I've really enjoyed working with Mohammed,He's not only a talented video editor but also someone who understands what makes short-form content work. He's consistent, responsive, and always willing to improve based on feedback. His editing has helped us maintain a strong flow of content across our TikTok channels."
                 </p>
               </div>
               <div className="flex items-center gap-4 pt-4 border-t border-white/10">
@@ -259,13 +332,15 @@ export default function App() {
             </div>
 
             {/* Testimonial 2 */}
-            <div className={`p-8 rounded-2xl border relative flex flex-col justify-between ${theme.glass}`}>
+            <div className={`p-8 rounded-2xl border relative flex flex-col justify-between ${theme.glass} hover:border-purple-400/50 transition-all duration-300`}>
               <Quote className="absolute top-6 right-6 text-purple-500/20" size={50} />
               <div>
                 <div className="flex gap-1 mb-6">
-                  {[1, 2, 3, 4, 5].map(star => (
-                    <Star key={star} className="fill-yellow-500 text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]" size={18} />
-                  ))}
+                  <Star className="fill-yellow-500 text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]" size={18} />
+                  <Star className="fill-yellow-500 text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]" size={18} />
+                  <Star className="fill-yellow-500 text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]" size={18} />
+                  <Star className="fill-yellow-500 text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]" size={18} />
+                  <Star className="fill-yellow-500 text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]" size={18} />
                 </div>
                 <p className={`text-sm italic font-medium mb-8 leading-relaxed ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>
                   "Working with Arefin Shafi has been an exceptional experience. Creativity and attention to detail are evident in everything he delivers—from short-form viral cuts to full promotional packages."
@@ -276,23 +351,27 @@ export default function App() {
                   <img src={client2Img} alt="Client Partner" className="w-full h-full object-cover" />
                 </div>
                 <div>
-                  <h4 className="font-black uppercase tracking-wider text-sm text-purple-400">Client Partner</h4>
-                  <p className={`text-xs font-bold uppercase ${theme.textMuted}`}>Digital Producer</p>
+                  <h4 className="font-black uppercase tracking-wider text-sm text-purple-400">
+                    Neofytos Siakos
+                  </h4>
+                  <p className={`text-xs font-bold uppercase ${theme.textMuted}`}>Media Expert CY</p>
                 </div>
               </div>
             </div>
 
-            {/* Testimonial 3: Neofytos Siakou */}
-            <div className={`p-8 rounded-2xl border relative flex flex-col justify-between ${theme.glass}`}>
+            {/* Testimonial 3: Neofytos Siakos */}
+            <div className={`p-8 rounded-2xl border relative flex flex-col justify-between ${theme.glass} hover:border-pink-400/50 transition-all duration-300`}>
               <Quote className="absolute top-6 right-6 text-purple-500/20" size={50} />
               <div>
                 <div className="flex gap-1 mb-6">
-                  {[1, 2, 3, 4, 5].map(star => (
-                    <Star key={star} className="fill-yellow-500 text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]" size={18} />
-                  ))}
+                  <Star className="fill-yellow-500 text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]" size={18} />
+                  <Star className="fill-yellow-500 text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]" size={18} />
+                  <Star className="fill-yellow-500 text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]" size={18} />
+                  <Star className="fill-yellow-500 text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]" size={18} />
+                  <Star className="fill-yellow-500 text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]" size={18} />
                 </div>
                 <p className={`text-sm italic font-medium mb-8 leading-relaxed ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>
-                  "Working with Arefin Shafi has been a great experience. His creativity and attention to detail are evident in everything he does, from video editing and graphic design to managing and scheduling content across multiple social media accounts. He is reliable, adaptable, and always delivers quality work."
+                  "Working with Shamsul has been a great experience. His creativity and attention to detail are evident in everything he does, from video editing and graphic design to managing and scheduling content across multiple social media accounts. He is reliable, adaptable, and always delivers quality work that aligns with our clients’ needs."
                 </p>
               </div>
               <div className="flex items-center gap-4 pt-4 border-t border-white/10">
@@ -300,8 +379,34 @@ export default function App() {
                   <img src={client3Img} alt="Neofytos Siakos" className="w-full h-full object-cover" />
                 </div>
                 <div>
-                  <h4 className="font-black uppercase tracking-wider text-sm text-pink-400">Neofytos Siakos</h4>
-                  <p className={`text-xs font-bold uppercase ${theme.textMuted}`}>Media Expert, CY</p>
+                  <h4 className="font-black uppercase tracking-wider text-sm text-pink-400">Amy Janece</h4>
+                  <p className={`text-xs font-bold uppercase ${theme.textMuted}`}>Founder of Embody Your Element</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Testimonial 4: NEW REVIEW SLOT */}
+            <div className={`p-8 rounded-2xl border relative flex flex-col justify-between ${theme.glass} hover:border-cyan-400/50 transition-all duration-300`}>
+              <Quote className="absolute top-6 right-6 text-cyan-500/20" size={50} />
+              <div>
+                <div className="flex gap-1 mb-6">
+                  <Star className="fill-yellow-500 text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]" size={18} />
+                  <Star className="fill-yellow-500 text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]" size={18} />
+                  <Star className="fill-yellow-500 text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]" size={18} />
+                  <Star className="fill-yellow-500 text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]" size={18} />
+                  <Star className="fill-yellow-500 text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.8)]" size={18} />
+                </div>
+                <p className={`text-sm italic font-medium mb-8 leading-relaxed ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>
+                  "Shafi has an incredible work ethic and makes beautiful content for myself and my clients. So glad we found him. He communicates, provides quick turnaround, and gives great feedback"
+                </p>
+              </div>
+              <div className="flex items-center gap-4 pt-4 border-t border-white/10">
+                <div className="w-12 h-12 rounded-xl overflow-hidden border-2 border-cyan-400 shrink-0">
+                  <img src={client4Img} alt="Client 4" className="w-full h-full object-cover" />
+                </div>
+                <div>
+                  <h4 className="font-black uppercase tracking-wider text-sm text-cyan-400">Annelise Brueher</h4>
+                  <p className={`text-xs font-bold uppercase ${theme.textMuted}`}>Bruebird Agency</p>
                 </div>
               </div>
             </div>
@@ -328,7 +433,7 @@ export default function App() {
         </div>
       </section>
 
-      {/* About Section (PDF Copy Integrated) */}
+      {/* About Section */}
       <section id="about" className="py-24 px-6 relative z-10">
         <div className="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
           <div>
@@ -338,7 +443,6 @@ export default function App() {
               I'm a freelance video editor from Bangladesh. Video editing is more than just work for me—it's my main creative profession. I enjoy taking raw footage and shaping it into something polished, engaging, and enjoyable to watch.
             </p>
 
-            {/* Education & Certifications */}
             <div className="space-y-4 mb-8">
               <div className="flex items-start gap-3">
                 <BookOpen className="text-cyan-400 shrink-0 mt-1" size={20} />
@@ -356,7 +460,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Workflow Style Tags */}
             <div className="flex flex-wrap gap-2 text-xs font-bold uppercase tracking-wider text-cyan-400">
               <span className="px-3 py-1 rounded bg-cyan-500/10 border border-cyan-500/20">Clean</span>
               <span className="px-3 py-1 rounded bg-cyan-500/10 border border-cyan-500/20">Professional</span>
@@ -366,7 +469,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* Tools & Gaming Passion */}
           <div className={`p-8 rounded-2xl border ${theme.glass} space-y-6`}>
             <h4 className="text-xl font-black uppercase tracking-wider text-purple-400">Tools & Stack</h4>
             <div className="grid grid-cols-2 gap-4 text-sm font-bold">
